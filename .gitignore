@@ -1,0 +1,56 @@
+# Flutter specific
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.flutter-versions
+.pub-cache/
+
+# Build outputs
+build/
+android/app/build/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/
+macos/Flutter/
+linux/flutter/
+windows/flutter/
+
+# Dependency management
+pubspec.lock
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# macOS and Xcode specific
+DerivedData/
+*.xcworkspace/
+ios/Runner.xcworkspace/
+ios/Runner.xcodeproj/project.xcworkspace/
+xcuserdata/
+ios/.generated/
+
+# Android specific
+android/.gradle/
+android/captures/
+
+# Web
+web/.dart_tool/
+
+# Windows
+windows/.dart_tool/
+
+# Linux
+linux/.dart_tool/
+
+# Crash reports
+flutter_crash.log
+
+# Firebase and environment-specific
+firebase.json
+*.env
+*.secrets
+
+# Debugging
+*.log
