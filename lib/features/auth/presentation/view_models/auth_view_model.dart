@@ -13,6 +13,8 @@ class AuthViewModel extends ChangeNotifier {
   List<int> favoriteDishIds = [];
   List<Dish> favoriteDishes = [];
 
+  bool get isAuthenticated => token != null && token!.isNotEmpty;
+
   String _translateError(String error) {
     if (error.contains("Неверный логин или пароль")) {
       return "Неверный логин или пароль. Пожалуйста, проверьте введенные данные.";

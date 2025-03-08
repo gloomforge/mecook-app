@@ -13,8 +13,19 @@ import 'package:mecook_application/features/recipes/data/repositories/dish_card_
 import 'package:mecook_application/features/recipes/presentation/view_models/dish_card_view_model.dart';
 import 'package:mecook_application/core/network/network_service.dart';
 import 'package:mecook_application/core/network/connectivity_notifier.dart';
+import 'package:mecook_application/main.dart';
 
 class AppRoutes {
+  static Widget home() {
+    final authViewModel = Provider.of<AuthViewModel>(navigatorKey.currentContext!, listen: false);
+    return HomeView(authViewModel: authViewModel);
+  }
+  
+  static Widget login() {
+    final authViewModel = Provider.of<AuthViewModel>(navigatorKey.currentContext!, listen: false);
+    return LoginView(authViewModel: authViewModel);
+  }
+  
   static Route? onGenerateRoute(
     RouteSettings settings,
     AuthViewModel authViewModel,

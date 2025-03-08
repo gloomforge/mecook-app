@@ -169,7 +169,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                   ),
                   Align(
                     alignment: Alignment.center,
-                    child: Padding(
+                child: Padding(
                       padding: const EdgeInsets.only(bottom: 20),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -202,12 +202,12 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                             tag: 'authTitle',
                             child: Material(
                               color: Colors.transparent,
-                              child: const Text(
-                                "Регистрация",
-                                style: TextStyle(
+                  child: const Text(
+                    "Регистрация",
+                    style: TextStyle(
                                   fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                                   letterSpacing: 1.2,
                                 ),
                                 textAlign: TextAlign.center,
@@ -226,11 +226,11 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
           SafeArea(
             child: SingleChildScrollView(
               physics: BouncingScrollPhysics(),
-              child: Padding(
-                padding: EdgeInsets.only(
+            child: Padding(
+              padding: EdgeInsets.only(
                   top: MediaQuery.of(context).size.height * 0.20,
-                  left: 16,
-                  right: 16,
+                left: 16,
+                right: 16,
                 ),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
@@ -244,9 +244,9 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(20.0),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
+              child: Form(
+                key: _formKey,
+                child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (errorMessage != null)
@@ -264,7 +264,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                                     ),
                                   ),
                                   child: Row(
-                                    children: [
+                  children: [
                                       Icon(
                                         Icons.error_outline_rounded,
                                         color: AppColors.errorColor,
@@ -309,12 +309,12 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                                   }
                                 },
                                 validator: (value) =>
-                                    (value == null || value.isEmpty)
-                                        ? "Обязательное поле"
-                                        : null,
-                              ),
+                              (value == null || value.isEmpty)
+                                  ? "Обязательное поле"
+                                  : null,
+                    ),
                               
-                              const SizedBox(height: 16),
+                    const SizedBox(height: 16),
                               
                               _buildInputLabel("Email"),
                               const SizedBox(height: 8),
@@ -356,13 +356,13 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                                 errorText: fieldErrors['password'],
                                 onChanged: (value) {
                                   if (fieldErrors.containsKey('password')) {
-                                    setState(() {
+                            setState(() {
                                       fieldErrors.remove('password');
                                     });
                                   }
                                 },
                                 onPasswordVisibilityChanged: () {
-                                  setState(() {
+                            setState(() {
                                     _obscurePassword = !_obscurePassword;
                                   });
                                 },
@@ -390,7 +390,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                                 errorText: fieldErrors['confirm_password'],
                                 onChanged: (value) {
                                   if (fieldErrors.containsKey('confirm_password')) {
-                                    setState(() {
+                              setState(() {
                                       fieldErrors.remove('confirm_password');
                                     });
                                   }
@@ -416,7 +416,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                               Theme(
                                 data: Theme.of(context).copyWith(
                                   checkboxTheme: CheckboxThemeData(
-                                    shape: RoundedRectangleBorder(
+                          shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                   ),
@@ -699,7 +699,7 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
                   ),
                   SizedBox(width: 4),
                   Expanded(
-                    child: Text(
+              child: Text(
                       errorText,
                       style: TextStyle(
                         color: AppColors.errorColor,
@@ -969,7 +969,7 @@ class _WaveClipper extends CustomClipper<Path> {
       size.height * 0.95, 
       size.width * 0.35, 
       size.height * 0.82, 
-      size.width * 0.5, 
+      size.width * 0.5,
       size.height * 0.85,
     );
     
@@ -977,8 +977,8 @@ class _WaveClipper extends CustomClipper<Path> {
       size.width * 0.65, 
       size.height * 0.88, 
       size.width * 0.85, 
-      size.height * 0.7, 
-      size.width, 
+      size.height * 0.7,
+      size.width,
       size.height * 0.8,
     );
     

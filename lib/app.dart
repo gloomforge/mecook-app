@@ -5,16 +5,30 @@ import 'core/network/connectivity_notifier.dart';
 import 'package:mecook_application/features/auth/presentation/view_models/auth_view_model.dart';
 import 'main.dart';
 import 'package:mecook_application/core/constants.dart';
+import 'package:mecook_application/features/splash/presentation/views/splash_screen.dart';
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final AuthViewModel authViewModel;
   const MyApp({Key? key, required this.authViewModel}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _showSplash = true;
+
+  void _hideSplash() {
+    setState(() {
+      _showSplash = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'MeCook',
+      title: 'МеКук',
       theme: ThemeData(
         primaryColor: AppColors.primaryColor,
         scaffoldBackgroundColor: AppColors.backgroundColor,
@@ -107,10 +121,12 @@ class MyApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
       ),
-      initialRoute: '/loading',
+      home: _showSplash 
+          ? SplashScreen(onSplashComplete: _hideSplash)
+          : _getInitialRoute(),
       navigatorKey: navigatorKey,
       onGenerateRoute:
-          (settings) => AppRoutes.onGenerateRoute(settings, authViewModel),
+          (settings) => AppRoutes.onGenerateRoute(settings, widget.authViewModel),
       builder: (context, child) {
         return Consumer<ConnectivityNotifier>(
           builder: (context, connectivity, _) {
@@ -127,7 +143,7 @@ class MyApp extends StatelessWidget {
                 ),
                 home: AppRoutes.onGenerateRoute(
                   const RouteSettings(name: '/noConnection'),
-                  authViewModel,
+                  widget.authViewModel,
                 )?.buildContent(context),
               );
             }
@@ -136,5 +152,14 @@ class MyApp extends StatelessWidget {
         );
       },
     );
+  }
+
+  Widget _getInitialRoute() {
+    final authViewModel = widget.authViewModel;
+    if (authViewModel.isAuthenticated) {
+      return AppRoutes.home();
+    } else {
+      return AppRoutes.login();
+    }
   }
 }
