@@ -51,33 +51,7 @@ class AuthViewModel extends ChangeNotifier {
       return "Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.";
     } 
     
-    else if (error.contains("Email already exists") || error.contains("email already exists") ||
-            error.contains("Email уже зарегистрирован")) {
-      return "Данный email уже зарегистрирован. Пожалуйста, используйте другой адрес или восстановите пароль.";
-    } else if (error.contains("Invalid email format") || error.contains("invalid email") ||
-              error.contains("неверный формат email") || error.contains("некорректный email")) {
-      return "Неверный формат email. Пожалуйста, проверьте правильность ввода.";
-    }
-    
-    else if (error.contains("Password is too short") || error.contains("password is too short") ||
-            error.contains("Пароль должен содержать")) {
-      return "Пароль слишком короткий. Используйте не менее 6 символов.";
-    } else if (error.contains("Password") && error.contains("match") ||
-              error.contains("Пароли") && error.contains("совпадают")) {
-      return "Пароли не совпадают. Пожалуйста, проверьте ввод.";
-    }
-    
-    else if (error.contains("no_connection") || error.toLowerCase().contains("соединение") ||
-            error.toLowerCase().contains("подключение") || error.toLowerCase().contains("connection")) {
-      return "Нет подключения к интернету. Пожалуйста, проверьте соединение и попробуйте снова.";
-    }
-    
-    else if (error.contains("Ошибка сервера") || error.contains("Server error") ||
-            error.contains("500") || error.contains("502") || error.contains("503")) {
-      return "Ошибка сервера. Пожалуйста, попробуйте позже.";
-    }
-    
-    return "Произошла ошибка: " + error;
+    return error;
   }
 
   Future<String?> login(String identifier, String password) async {
@@ -110,12 +84,35 @@ class AuthViewModel extends ChangeNotifier {
       confirmPassword,
     );
     loading = false;
+    
     if (result["error"] == "no_connection") {
       return "no_connection";
     }
+    
     if (result.containsKey("success") && result["success"] == true) {
       return null;
     }
+    
+    if (result.containsKey("token") || 
+        result.containsKey("user") || 
+        result.containsKey("id") ||
+        (result.containsKey("message") && (
+          result["message"].toString().toLowerCase().contains("успешно") || 
+          result["message"].toString().toLowerCase().contains("success")
+        ))) {
+      return null;
+    }
+    
+    if (result.containsKey("userId") || result.containsKey("username")) {
+      return null;
+    }
+    
+    if (result.containsKey("token")) {
+      token = result["token"];
+      await tokenStorage.writeToken(token!);
+      return null;
+    }
+    
     return _translateError(result["error"] ?? "Ошибка регистрации");
   }
 
@@ -141,55 +138,33 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
   
-  Future<void> addFavoriteDish(int dishId, [Dish? dish]) async {
-    if (token != null) {
-      if (!favoriteDishIds.contains(dishId)) {
-        favoriteDishIds.add(dishId);
-        if (dish != null && !favoriteDishes.any((d) => d.id == dishId)) {
-          favoriteDishes.add(dish);
-        }
-        notifyListeners();
-      }
-      
-      final repo = FavoritesRepository();
-      bool success = await repo.addFavoriteDish(token!, dishId);
-      
-      if (!success) {
-        favoriteDishIds.remove(dishId);
-        favoriteDishes.removeWhere((d) => d.id == dishId);
-        notifyListeners();
-      } else {
-        await loadFavoriteDishes();
-      }
-    }
-  }
-  
-  Future<void> removeFavoriteDish(int dishId) async {
-    if (token != null) {
-      if (favoriteDishIds.contains(dishId)) {
-        favoriteDishIds.remove(dishId);
-        favoriteDishes.removeWhere((d) => d.id == dishId);
-        notifyListeners(); 
-      }
-      
-      final repo = FavoritesRepository();
-      bool success = await repo.removeFavoriteDish(token!, dishId);
-      
-      if (!success) {
-        await loadFavoriteDishes();
-      }
-    }
-  }
-  
   bool isDishFavorite(int dishId) {
     return favoriteDishIds.contains(dishId);
   }
-  
-  Future<void> toggleFavorite(Dish dish) async {
+
+  Future<bool> toggleFavorite(Dish dish) async {
+    if (token == null) return false;
+    
+    final repo = FavoritesRepository();
+    
     if (isDishFavorite(dish.id)) {
-      await removeFavoriteDish(dish.id);
+      final success = await repo.removeFavoriteDish(token!, dish.id);
+      if (success) {
+        favoriteDishIds.remove(dish.id);
+        favoriteDishes.removeWhere((d) => d.id == dish.id);
+        notifyListeners();
+        return true;
+      }
     } else {
-      await addFavoriteDish(dish.id, dish);
+      final success = await repo.addFavoriteDish(token!, dish.id);
+      if (success) {
+        favoriteDishIds.add(dish.id);
+        favoriteDishes.add(dish);
+        notifyListeners();
+        return true;
+      }
     }
+    
+    return false;
   }
 }

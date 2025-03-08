@@ -774,63 +774,74 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
       
       final errorLower = error.toLowerCase();
       
-      if ((errorLower.contains('пользователь') || errorLower.contains('user')) && 
-          (errorLower.contains('уже существует') || errorLower.contains('already exists'))) {
+      if (errorLower.contains('username already exists') || 
+          errorLower.contains('username is already taken') ||
+          errorLower.contains('пользователь') && errorLower.contains('уже существует') ||
+          errorLower.contains('имя пользователя') && errorLower.contains('уже занято')) {
         fieldErrors['username'] = "Пользователь с таким именем уже существует";
       } 
-      else if (errorLower.contains('имя пользователя') && errorLower.contains('не соответствует')) {
+      else if (errorLower.contains('username') && errorLower.contains('invalid') ||
+               errorLower.contains('имя пользователя') && errorLower.contains('недопустим')) {
         fieldErrors['username'] = "Имя пользователя содержит недопустимые символы";
       }
-      else if ((errorLower.contains('имя пользователя') || errorLower.contains('username')) && 
-               (errorLower.contains('уже существует') || errorLower.contains('already exists') || 
-                errorLower.contains('уже занято'))) {
-        fieldErrors['username'] = "Имя пользователя уже занято";
-      } 
-      else if ((errorLower.contains('имя пользователя') || errorLower.contains('username')) && 
-                errorLower.contains('короткое')) {
-        fieldErrors['username'] = "Имя пользователя слишком короткое";
-      } 
+      else if (errorLower.contains('username') && errorLower.contains('too short') || 
+               errorLower.contains('имя пользователя') && errorLower.contains('короткое')) {
+        fieldErrors['username'] = "Имя пользователя слишком короткое (минимум 3 символа)";
+      }
+      else if (errorLower.contains('username') && errorLower.contains('too long') || 
+               errorLower.contains('имя пользователя') && errorLower.contains('длинное')) {
+        fieldErrors['username'] = "Имя пользователя слишком длинное (максимум 30 символов)";
+      }
       
-      else if (errorLower.contains('email') && 
-               (errorLower.contains('уже существует') || errorLower.contains('already exists') || 
-                errorLower.contains('уже зарегистрирован'))) {
+      else if (errorLower.contains('email already exists') || 
+               errorLower.contains('email is already registered') ||
+               errorLower.contains('email') && errorLower.contains('уже') && 
+              (errorLower.contains('существует') || errorLower.contains('зарегистрирован'))) {
         fieldErrors['email'] = "Этот email уже зарегистрирован";
       } 
-      else if ((errorLower.contains('email') && errorLower.contains('формат')) || 
-                 errorLower.contains('неверный email') || 
-                 errorLower.contains('invalid email')) {
+      else if (errorLower.contains('email') && 
+              (errorLower.contains('invalid') || errorLower.contains('некорректный') || 
+               errorLower.contains('неверный'))) {
         fieldErrors['email'] = "Неверный формат email";
       } 
       
-      else if ((errorLower.contains('пароль') || errorLower.contains('password')) && 
-               (errorLower.contains('короткий') || errorLower.contains('short'))) {
+      else if (errorLower.contains('password') && errorLower.contains('short') || 
+               errorLower.contains('пароль') && errorLower.contains('короткий')) {
         fieldErrors['password'] = "Пароль должен содержать не менее 6 символов";
       } 
-      else if ((errorLower.contains('пароль') || errorLower.contains('password')) && 
-                (errorLower.contains('сложный') || errorLower.contains('weak') || 
-                 errorLower.contains('simple'))) {
+      else if (errorLower.contains('password') && 
+              (errorLower.contains('weak') || errorLower.contains('simple')) || 
+               errorLower.contains('пароль') && 
+              (errorLower.contains('слабый') || errorLower.contains('простой'))) {
         fieldErrors['password'] = "Пароль должен содержать буквы и цифры";
       } 
-      else if ((errorLower.contains('пароль') || errorLower.contains('password')) && 
-                (errorLower.contains('совпадают') || errorLower.contains('match'))) {
+      else if (errorLower.contains('password') && errorLower.contains('match') || 
+               errorLower.contains('пароль') && errorLower.contains('совпад')) {
         fieldErrors['confirm_password'] = "Пароли не совпадают";
       } 
       
-      else if (errorLower.contains('подключение') || 
-               errorLower.contains('соединение') || 
-               errorLower.contains('connection')) {
+      else if (errorLower.contains('connection') || 
+               errorLower.contains('connectivity') || 
+               errorLower.contains('connect') ||
+               errorLower.contains('подключ') || 
+               errorLower.contains('соедин') ||
+               error == "no_connection") {
         errorMessage = "Проблема с подключением к серверу. Проверьте интернет и попробуйте снова.";
       } 
       
-      else if (errorLower.contains('ошибка сервера') || 
-               errorLower.contains('server error') ||
+      else if (errorLower.contains('server error') || 
+               errorLower.contains('internal error') ||
+               errorLower.contains('ошибка сервера') ||
                errorLower.contains('500') || 
                errorLower.contains('502') ||
                errorLower.contains('503')) {
         errorMessage = "Внутренняя ошибка сервера. Пожалуйста, попробуйте позже.";
       }
       
-      else if (errorLower.contains('согласи') || errorLower.contains('услови')) {
+      else if (errorLower.contains('terms') || 
+               errorLower.contains('agreement') ||
+               errorLower.contains('согласи') || 
+               errorLower.contains('услови')) {
         fieldErrors['terms'] = "Для регистрации необходимо принять условия";
       }
       
@@ -850,35 +861,100 @@ class _RegisterViewState extends State<RegisterView> with SingleTickerProviderSt
     
     _clearErrors();
     
+    if (!_validateFormBeforeSubmit()) {
+      return;
+    }
+    
     if (_formKey.currentState!.validate()) {
       setState(() {
         loading = true;
       });
       
-      String? error = await widget.authViewModel.register(
-        usernameController.text,
-        emailController.text,
-        passwordController.text,
-        confirmPasswordController.text,
-      );
-      
-      setState(() {
-        loading = false;
-      });
-      
-      if (error == null) {
-        await _animationController.reverse();
-        Navigator.pushReplacementNamed(context, '/home');
-      } else if (error.toLowerCase().contains("нет подключения") || 
-                 error.toLowerCase().contains("соединение") ||
-                 error == "no_connection") {
-        setState(() {
-          errorMessage = "Нет подключения к интернету. Проверьте соединение и попробуйте снова.";
-        });
-      } else {
-        _parseErrorMessage(error);
+      try {
+        String? error = await widget.authViewModel.register(
+          usernameController.text.trim(),
+          emailController.text.trim(),
+          passwordController.text,
+          confirmPasswordController.text,
+        );
+        
+        if (mounted) {
+          setState(() {
+            loading = false;
+          });
+          
+          if (error == null) {
+            await _animationController.reverse();
+            Navigator.pushReplacementNamed(context, '/home');
+          } else if (error.toLowerCase().contains("нет подключения") || 
+                    error.toLowerCase().contains("соединение") ||
+                    error.toLowerCase().contains("connection") ||
+                    error == "no_connection") {
+            Navigator.pushReplacementNamed(context, '/noConnection');
+          } else {
+            _parseErrorMessage(error);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            loading = false;
+            errorMessage = "Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.";
+          });
+        }
       }
     }
+  }
+  
+  bool _validateFormBeforeSubmit() {
+    bool isValid = true;
+    
+    if (usernameController.text.trim().length < 3) {
+      setState(() {
+        fieldErrors['username'] = "Имя пользователя должно содержать минимум 3 символа";
+      });
+      isValid = false;
+    } else if (usernameController.text.trim().length > 30) {
+      setState(() {
+        fieldErrors['username'] = "Имя пользователя должно быть не более 30 символов";
+      });
+      isValid = false;
+    } else if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(usernameController.text.trim())) {
+      setState(() {
+        fieldErrors['username'] = "Имя пользователя может содержать только буквы, цифры и знак подчеркивания";
+      });
+      isValid = false;
+    }
+    
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(emailController.text.trim())) {
+      setState(() {
+        fieldErrors['email'] = "Некорректный формат email";
+      });
+      isValid = false;
+    }
+    
+    if (passwordController.text.length < 6) {
+      setState(() {
+        fieldErrors['password'] = "Пароль должен содержать минимум 6 символов";
+      });
+      isValid = false;
+    } else if (!RegExp(r'[A-Za-z]').hasMatch(passwordController.text) || 
+              !RegExp(r'[0-9]').hasMatch(passwordController.text)) {
+      setState(() {
+        fieldErrors['password'] = "Пароль должен содержать как минимум одну букву и одну цифру";
+      });
+      isValid = false;
+    }
+    
+    if (passwordController.text != confirmPasswordController.text) {
+      setState(() {
+        fieldErrors['confirm_password'] = "Пароли не совпадают";
+      });
+      isValid = false;
+    }
+    
+    return isValid;
   }
 }
 

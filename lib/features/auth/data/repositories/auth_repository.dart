@@ -93,8 +93,20 @@ class AuthRepository {
           }),
         );
         
-        if (response.statusCode == 200) {
-          return jsonDecode(response.body) as Map<String, dynamic>;
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          try {
+            final responseData = jsonDecode(response.body) as Map<String, dynamic>;
+            
+            responseData["success"] = true;
+            
+            if (!responseData.containsKey("message")) {
+              responseData["message"] = "Регистрация выполнена успешно";
+            }
+            
+            return responseData;
+          } catch (e) {
+            return {"success": true, "message": "Регистрация выполнена успешно"};
+          }
         }
         
         try {
@@ -116,7 +128,6 @@ class AuthRepository {
             }
           }
         } catch (e) {
-        
         }
         
         final responseText = response.body.toLowerCase();
@@ -152,6 +163,11 @@ class AuthRepository {
     if (result == null) {
       return {"error": "Нет подключения к интернету. Проверьте соединение и попробуйте снова."};
     }
+    
+    if (!result.containsKey("error") && !result.containsKey("success")) {
+      result["success"] = true;
+    }
+    
     return result;
   }
   

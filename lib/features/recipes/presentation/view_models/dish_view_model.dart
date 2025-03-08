@@ -112,6 +112,16 @@ class DishViewModel extends ChangeNotifier {
     notifyListeners();
   }
   
+  void clearSelectedIngredients() {
+    selectedIngredients.clear();
+    if (selectedCountry != null) {
+      updateFilteredDishes();
+    } else {
+      filteredDishes.clear();
+    }
+    notifyListeners();
+  }
+  
   @override
   void dispose() {
     allIngredients.clear();

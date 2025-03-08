@@ -110,6 +110,220 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
     });
   }
 
+  void _showCountrySelector() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildCountrySelectorModal(),
+    );
+  }
+
+  Widget _buildCountrySelectorModal() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final modalHeight = screenHeight * 0.7;
+    
+    return Container(
+      height: modalHeight,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 0,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            alignment: Alignment.center,
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.public,
+                  color: AppColors.primaryColor,
+                  size: 24,
+                ),
+                SizedBox(width: 12),
+                Text(
+                  "Выберите страну",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimaryColor,
+                  ),
+                ),
+                Spacer(),
+                IconButton(
+                  icon: Icon(Icons.close, color: Colors.grey.shade600),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          Divider(),
+          Expanded(
+            child: dishViewModel.loadingCountries 
+                ? Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryColor),
+                    ),
+                  )
+                : dishViewModel.allCountries.isEmpty
+                    ? Center(
+                        child: Text(
+                          "Страны не найдены",
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      )
+                    : GridView.builder(
+                        padding: EdgeInsets.all(16),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          childAspectRatio: 0.85,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: dishViewModel.allCountries.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == 0) {
+                            return _buildCountryGridItem(
+                              name: "Все страны",
+                              imageUrl: null,
+                              isSelected: dishViewModel.selectedCountry == null,
+                              onTap: () {
+                                setState(() {
+                                  if (dishViewModel.selectedCountry != null) {
+                                    dishViewModel.clearFilters();
+                                  }
+                                });
+                                Navigator.pop(context);
+                              },
+                            );
+                          } else {
+                            final country = dishViewModel.allCountries[index - 1];
+                            return _buildCountryGridItem(
+                              name: country.name,
+                              imageUrl: country.imageUrl,
+                              isSelected: dishViewModel.selectedCountry?.id == country.id,
+                              onTap: () {
+                                setState(() {
+                                  dishViewModel.selectCountry(country);
+                                });
+                                Navigator.pop(context);
+                              },
+                            );
+                          }
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountryGridItem({
+    required String name, 
+    String? imageUrl, 
+    required bool isSelected, 
+    required VoidCallback onTap
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryColor.withOpacity(0.1) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primaryColor : Colors.grey.shade200,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 60,
+              height: 40,
+              margin: EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 2,
+                    spreadRadius: 0,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: imageUrl != null && imageUrl.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.flag_outlined,
+                            color: Colors.grey.shade400,
+                            size: 24,
+                          );
+                        },
+                      ),
+                    )
+                  : Center(
+                      child: Icon(
+                        Icons.public,
+                        color: isSelected ? AppColors.primaryColor : Colors.grey.shade400,
+                        size: 24,
+                      ),
+                    ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                name,
+                style: TextStyle(
+                  color: isSelected ? AppColors.primaryColor : AppColors.textPrimaryColor,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAppBar() {
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 12),
@@ -190,39 +404,122 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Выберите страну",
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
+          InkWell(
+            onTap: _showCountrySelector,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 4,
+                    spreadRadius: 0,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: dishViewModel.selectedCountry != null && 
+                           dishViewModel.selectedCountry!.imageUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.network(
+                              dishViewModel.selectedCountry!.imageUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Icon(
+                                    Icons.flag_outlined, 
+                                    color: Colors.grey.shade400,
+                                    size: 20,
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        : Center(
+                            child: Icon(
+                              Icons.public, 
+                              color: AppColors.primaryColor,
+                              size: 20,
+                            ),
+                          ),
+                  ),
+                  SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Страна",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        dishViewModel.selectedCountry?.name ?? "Все страны",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Spacer(),
+                  Icon(
+                    Icons.keyboard_arrow_down,
+                    color: Colors.grey.shade600,
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            child: CountrySelector(
-              countries: dishViewModel.allCountries,
-              selectedCountry: dishViewModel.selectedCountry,
-              onCountrySelected: (country) {
-                setState(() {
-                  dishViewModel.selectCountry(country);
-                });
-              },
-              isLoading: dishViewModel.loadingCountries,
-            ),
-          ),
-          const SizedBox(height: 16),
           
-          Text(
-            "Какой ингредиент есть?",
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.black87,
-              fontWeight: FontWeight.w500,
-            ),
+          SizedBox(height: 20),
+          
+          Row(
+            children: [
+              Icon(
+                Icons.restaurant,
+                size: 20,
+                color: AppColors.primaryColor,
+              ),
+              SizedBox(width: 8),
+              Text(
+                "Ингредиенты",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textPrimaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(width: 6),
+              Text(
+                "что есть в холодильнике?",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.normal,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
@@ -298,16 +595,56 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
           ),
           
           if (dishViewModel.selectedIngredients.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              "Выбранные ингредиенты:",
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.black87,
-                fontWeight: FontWeight.w500,
-              ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 18,
+                  color: AppColors.primaryColor,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  "Выбранные ингредиенты",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textPrimaryColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Spacer(),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      dishViewModel.clearSelectedIngredients();
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.clear_all,
+                          size: 16,
+                          color: AppColors.accentColor,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          "Очистить",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.accentColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 6,
               runSpacing: 6,
@@ -658,4 +995,3 @@ class _HomeViewState extends State<HomeView> with SingleTickerProviderStateMixin
     );
   }
 }
-
