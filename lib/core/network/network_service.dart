@@ -12,9 +12,11 @@ class NetworkService {
     try {
       final url = Uri.parse("${baseUrl ?? AppConfig.serverUrl}/api/ping");
       final response = await http.get(url).timeout(Duration(seconds: connectionTimeout));
+      
       return response.statusCode == 200;
-    } catch (_) {
-      return await hasInternetConnection();
+    } catch (e) {
+      print("Ошибка соединения с сервером: $e");
+      return false;
     }
   }
   

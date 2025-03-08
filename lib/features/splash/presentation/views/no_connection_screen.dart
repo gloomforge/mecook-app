@@ -13,9 +13,9 @@ class NoConnectionScreen extends StatefulWidget {
 
 class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTickerProviderStateMixin {
   bool _loading = false;
-  bool _hasInternet = false;
   bool _serverConnected = false;
   int _retryAttempts = 0;
+  int _serverRetryCount = 0;
   
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -48,7 +48,7 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _animationController.forward();
-      _checkConnectionStatus();
+      _checkServerConnection();
     });
   }
 
@@ -58,12 +58,11 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
     super.dispose();
   }
 
-  Future<void> _checkConnectionStatus() async {
-    final status = await NetworkService.getConnectionStatus();
+  Future<void> _checkServerConnection() async {
+    final serverConnected = await NetworkService.isConnected();
     if (mounted) {
       setState(() {
-        _hasInternet = status['hasInternet'];
-        _serverConnected = status['serverConnected'];
+        _serverConnected = serverConnected;
       });
     }
   }
@@ -74,38 +73,51 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
     setState(() {
       _loading = true;
       _retryAttempts++;
+      _serverRetryCount = 0;
     });
     
-    await NetworkService.resetConnection();
-    
-    bool hasInternet = await NetworkService.hasInternetConnection();
-    if (!hasInternet) {
-      setState(() {
-        _loading = false;
-        _hasInternet = false;
-        _serverConnected = false;
-      });
-      _showConnectionError("Отсутствует подключение к интернету. Проверьте настройки сети.");
-      return;
-    }
-    
     bool serverConnected = false;
-    for (int i = 0; i < 2; i++) {
-      serverConnected = await NetworkService.isConnected();
-      if (serverConnected) break;
-      await Future.delayed(Duration(seconds: 1));
+    
+    for (int i = 0; i < 3; i++) {
+      setState(() {
+        _serverRetryCount = i + 1;
+      });
+      
+      try {
+        serverConnected = await NetworkService.isConnected();
+        
+        if (serverConnected) {
+          await Future.delayed(Duration(milliseconds: 800));
+          final secondCheck = await NetworkService.isConnected();
+          
+          if (secondCheck) {
+            break; 
+          } else {
+            serverConnected = false;
+          }
+        }
+      } catch (e) {
+        serverConnected = false;
+        print("Ошибка при проверке соединения: $e");
+      }
+      
+      if (!serverConnected && i < 2) {
+        await Future.delayed(Duration(seconds: 1));
+      }
     }
     
-    await _checkConnectionStatus();
+    if (mounted) {
+      setState(() {
+        _serverConnected = serverConnected;
+        _loading = false;
+      });
+    }
     
     if (serverConnected && mounted) {
       await _animationController.reverse();
       widget.onRetry();
     } else {
-      setState(() => _loading = false);
-      _showConnectionError(_hasInternet 
-          ? "Сервер недоступен. Проверьте работу сервера и повторите попытку позже."
-          : "Подключение к интернету отсутствует. Проверьте настройки сети.");
+      _showConnectionError("Сервер недоступен. Пожалуйста, повторите попытку позже.");
     }
   }
   
@@ -223,42 +235,66 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
                     alignment: Alignment.center,
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(15),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  spreadRadius: 0,
-                                  offset: Offset(0, 2),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(15),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 8,
+                                      spreadRadius: 0,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.wifi_off_rounded,
-                              size: 30,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Material(
-                            color: Colors.transparent,
-                            child: const Text(
-                              "Нет соединения",
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 1.2,
+                                child: Icon(
+                                  Icons.dns_outlined,
+                                  size: 30,
+                                  color: Colors.white,
+                                ),
                               ),
-                              textAlign: TextAlign.center,
-                            ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "MeCook",
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.errorColor.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        "сервер недоступен",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white.withOpacity(0.9),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -277,6 +313,7 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
                   top: MediaQuery.of(context).size.height * 0.25,
                   left: 16,
                   right: 16,
+                  bottom: 16,
                 ),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
@@ -289,58 +326,56 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Padding(
-                        padding: const EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.all(20.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Image.asset(
                               'assets/images/no_connection.png',
-                              height: 120,
+                              height: 100,
                               fit: BoxFit.contain,
                               errorBuilder: (context, error, stackTrace) {
                                 return Icon(
-                                  Icons.signal_wifi_off,
-                                  size: 80,
+                                  Icons.dns_outlined,
+                                  size: 70,
                                   color: AppColors.primaryColor.withOpacity(0.7),
                                 );
                               },
                             ),
-                            SizedBox(height: 24),
+                            SizedBox(height: 20),
                             Text(
-                              "Проблема с подключением",
+                              "Сервер недоступен",
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                                 color: AppColors.textPrimaryColor,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            SizedBox(height: 12),
+                            SizedBox(height: 10),
                             Text(
-                              _hasInternet 
-                                ? "Не удается подключиться к серверу. Убедитесь, что сервер работает, или повторите попытку позже."
-                                : "Не удается подключиться к интернету. Проверьте настройки сети и повторите попытку.",
+                              "Для работы приложения необходимо стабильное соединение с сервером MeCook.",
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: 14,
                                 color: AppColors.textSecondaryColor,
                                 height: 1.4,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            SizedBox(height: 24),
+                            SizedBox(height: 20),
                             
                             _buildConnectionStatusIndicator(),
                             
-                            SizedBox(height: 24),
+                            SizedBox(height: 20),
                             _buildRetryButton(),
                             
                             if (_retryAttempts >= 2) ...[
-                              SizedBox(height: 16),
+                              SizedBox(height: 12),
                               Text(
-                                "Если проблема не устраняется после нескольких попыток, возможно, сервер временно недоступен.",
+                                "Если проблема повторяется, возможно, сервер временно недоступен.",
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 12,
                                   color: AppColors.textSecondaryColor.withOpacity(0.7),
                                   fontStyle: FontStyle.italic,
                                 ),
@@ -385,7 +420,9 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
                         ),
                         SizedBox(height: 16),
                         Text(
-                          "Проверка подключения...",
+                          _serverRetryCount > 0 
+                              ? "Проверка сервера (попытка $_serverRetryCount из 3)..." 
+                              : "Проверка соединения с сервером...",
                           style: TextStyle(
                             color: AppColors.textPrimaryColor,
                             fontWeight: FontWeight.w500,
@@ -410,11 +447,15 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildStatusItem(
-            icon: Icons.wifi, 
-            title: "Интернет-соединение", 
-            isActive: _hasInternet,
+          Text(
+            "Состояние соединения:",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimaryColor,
+            ),
           ),
           SizedBox(height: 12),
           _buildStatusItem(
@@ -445,7 +486,7 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
           child: Icon(
             icon,
             color: isActive ? AppColors.accentColor : AppColors.errorColor,
-            size: 20,
+            size: 18,
           ),
         ),
         SizedBox(width: 12),
@@ -455,21 +496,24 @@ class _NoConnectionScreenState extends State<NoConnectionScreen> with SingleTick
             style: TextStyle(
               color: AppColors.textPrimaryColor,
               fontWeight: FontWeight.w500,
+              fontSize: 14,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+        SizedBox(width: 6),
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
           decoration: BoxDecoration(
             color: isActive 
                 ? AppColors.accentColor.withOpacity(0.1)
                 : AppColors.errorColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
             isActive ? "Активно" : "Отключено",
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w500,
               color: isActive ? AppColors.accentColor : AppColors.errorColor,
             ),
