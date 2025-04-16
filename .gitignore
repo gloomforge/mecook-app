@@ -25,6 +25,7 @@ pubspec.lock
 
 # macOS and Xcode specific
 DerivedData/
+.DS_Store
 *.xcworkspace/
 ios/Runner.xcworkspace/
 ios/Runner.xcodeproj/project.xcworkspace/
